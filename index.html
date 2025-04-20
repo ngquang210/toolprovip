@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>vkhanhh v2 - Phân tích MD5 Tài Xỉu</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      background-color: #111827;
+      color: #f1f5f9;
+      font-family: 'Arial', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 50px 20px;
+    }
+    textarea {
+      width: 400px;
+      height: 100px;
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 16px;
+      resize: none;
+      margin-bottom: 20px;
+    }
+    button {
+      background-color: #16a34a;
+      border: none;
+      color: white;
+      padding: 10px 30px;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    h2 {
+      margin-bottom: 20px;
+    }
+    #result {
+      margin-top: 30px;
+      font-size: 20px;
+      font-weight: bold;
+    }
+    #chartContainer {
+      margin-top: 40px;
+      width: 400px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Sao chép mã vào để phân tích</h2>
+  <textarea id="md5Input" placeholder="Dán mã MD5 vào đây..."></textarea><br>
+  <button onclick="analyze()">Phân tích</button>
+  <div id="result"></div>
+  <div id="chartContainer">
+    <canvas id="chart" width="400" height="200"></canvas>
+  </div>
+
+  <script>
+    function analyze() {
+      const input = document.getElementById("md5Input").value.trim().toLowerCase();
+      const result = document.getElementById("result");
+      if (input.length !== 32 || !/^[a-f0-9]{32}$/.test(input)) {
+        result.innerHTML = "❌ Mã MD5 không hợp lệ. Hãy nhập đúng 32 ký tự hex.";
+        return;
+      }
+
+      let sum = 0;
+      let digits = 0, letters = 0;
+      let digitValues = [], letterValues = [];
+
+      for (let char of input) {
+        if (!isNaN(parseInt(char))) {
+          const val = parseInt(char);
+          digitValues.push(val);
+          sum += val;
+          digits++;
+        } else {
+          const val = char.charCodeAt(0) - 87; // a=10, ..., f=15
+          letterValues.push(val);
+          sum += val;
+          letters++;
+        }
+      }
+
+      // Phân tích logic kết hợp
+      const avg = sum / 32;
+      let weight = avg + (letters - digits) * 0.35;
+      let tai = weight * 3.05;
+      if (tai < 0) tai = 0;
+      if (tai > 100) tai = 100;
+      let xiu = 100 - tai;
+
+      result.innerHTML = `
+        🔴 Tài: ${tai.toFixed(2)}%<br>
+        🔵 Xỉu: ${xiu.toFixed(2)}%
+      `;
+
+      // Vẽ hình ảnh cầu (dựa trên chuỗi ký tự hex)
+      let ctx = document.getElementById('chart').getContext('2d');
+      if (window.chartObj) window.chartObj.destroy();
+      window.chartObj = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: [...Array(32).keys()].map(i => i + 1),
+          datasets: [{
+            label: 'Giá trị ký tự (cầu MD5)',
+            data: [...digitValues, ...letterValues],
+            borderColor: '#3b82f6',
+            backgroundColor: 'rgba(59, 130, 246, 0.3)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.3
+          }]
+        },
+        options: {
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 20
+            }
+          }
+        }
+      });
+    }
+  </script>
+</body>
+</html>
